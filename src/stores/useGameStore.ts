@@ -21,10 +21,12 @@ interface GameState {
   isQuestionModalOpen: boolean;
   visibleBoxIndex: number; // index kotak yang terlihat
   answerError: boolean;
+  isCinematicPlaying: boolean;
   startQuestion: (questionIndex: number) => void;
   submitAnswer: (answer: string) => void;
   closeModal: () => void;
   resetAnswerError: () => void;
+  endCinematic: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -35,6 +37,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   isQuestionModalOpen: false,
   visibleBoxIndex: 0,
   answerError: false,
+  isCinematicPlaying: true,
+
+  endCinematic: () => set({ isCinematicPlaying: false }),
 
   startQuestion: (questionIndex: number) => {
     // Hanya bisa buka kotak yang sesuai urutan
