@@ -9,6 +9,7 @@ import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
 import type { GLTF } from "three-stdlib";
 import { Mesh, ConeGeometry, MeshBasicMaterial } from "three";
+import { useGameStore } from "../stores/useGameStore";
 
 // =========================================================================
 // 1. Definisikan UFOBeam DI SINI (tetap di atas)
@@ -118,6 +119,7 @@ export function InvasionEnvironment({
     "/models/invasion_environment.glb"
   ) as unknown as GLTFResult;
   const { actions } = useAnimations(animations, group);
+  const endCinematic = useGameStore((state) => state.endCinematic);
 
   // Ganti ref ini agar menunjuk ke Group, bukan Mesh
   const ufoRef = React.useRef<THREE.Group>(null!);
@@ -131,7 +133,7 @@ export function InvasionEnvironment({
     const time = state.clock.getElapsedTime();
     if (ufoRef.current) {
       // 1. Tentukan berapa lama UFO akan diam (dalam detik)
-      const hoverDuration = 2.5; // Diam selama 2.5 detik
+      const hoverDuration = 3.0; // Diam selama 2.5 detik
 
       // 2. FASE DIAM (HOVER)
       // Selama waktu kurang dari hoverDuration, UFO tidak bergerak dari posisi awalnya.
@@ -142,10 +144,13 @@ export function InvasionEnvironment({
       // 3. FASE TERBANG
       // Setelah waktu hover selesai, UFO mulai terbang.
       else {
+        if (useGameStore.getState().isCinematicPlaying) {
+          endCinematic();
+        }
         // Hitung waktu terbang setelah masa hover selesai
         const flightTime = time - hoverDuration;
-        // Mulai pergerakan dari posisi awal (-5), bukan dari -40
-        ufoRef.current.position.x = -5 + flightTime * 8; // Kecepatan bisa diatur di sini (misal * 8)
+        // Mulai pergerakan dari posisi awal (-25), bukan dari -40
+        ufoRef.current.position.x = -25 + flightTime * 8; // Kecepatan bisa diatur di sini (misal * 8)
 
         // Hentikan gerakan setelah mencapai titik tertentu
         if (ufoRef.current.position.x > 50) {
@@ -183,16 +188,6 @@ export function InvasionEnvironment({
           <group name="invasion">
             <group name="Background_Decoar">
               <group name="Background_Buildings">
-                <group ref={ufoRef} position={[-5, 31, -20]}>
-                  <mesh
-                    name="UFO"
-                    geometry={nodes.UFO.geometry}
-                    material={materials.city_tex}
-                    position={[0, 0, 0]}
-                    scale={0.691}
-                  />
-                  <UFOBeam />
-                </group>
                 <mesh
                   name="Background_Building_1"
                   geometry={nodes.Background_Building_1.geometry}
