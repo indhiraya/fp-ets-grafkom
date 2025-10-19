@@ -1,4 +1,3 @@
-// PERBAIKAN 1: Impor Html dan perbaiki impor Rapier
 import { KeyboardControls, PositionalAudio, Html } from "@react-three/drei";
 import { useLoader, useThree } from "@react-three/fiber";
 import { Physics, RigidBody } from "@react-three/rapier";
@@ -7,6 +6,7 @@ import { useEffect } from "react";
 import * as THREE from "three";
 import { Character } from "./Character";
 import { InvasionEnvironment } from "./Invasion_environment";
+import { FlyingUFO } from "./FlyingUFO";
 import AtmosphericEffects from "./AtmosphericEffects";
 import keyboardMap from "../data/keyboardMap.json";
 import animationSet from "../data/animationSet.json";
@@ -19,7 +19,6 @@ useLoader.preload(THREE.TextureLoader, "/models/Textures/sky.jpg");
 function EndGameModal() {
   const score = useGameStore((state) => state.score);
   return (
-    // Dibungkus <Html> agar bisa dirender di atas scene 3D
     <Html center fullscreen>
       <div className="w-full h-full bg-black bg-opacity-80 flex flex-col justify-center items-center">
         <div className="bg-white text-gray-900 p-10 rounded-lg shadow-2xl flex flex-col items-center">
@@ -41,6 +40,7 @@ function EndGameModal() {
 const Experience = ({ shadows }: { shadows: boolean }) => {
   const characterURL = "/models/character.glb";
   
+  const isCinematicPlaying = useGameStore((state) => state.isCinematicPlaying);
   const questions = useGameStore((state) => state.questions);
   const visibleBoxIndex = useGameStore((state) => state.visibleBoxIndex);
 
@@ -54,7 +54,6 @@ const Experience = ({ shadows }: { shadows: boolean }) => {
 
   return (
     <>
-      {/* Audio, lampu, dan efek visual ditempatkan di sini, di luar Physics */}
       <PositionalAudio url="/sounds/background.mp3" distance={1} loop autoplay />
       <ambientLight intensity={0.7} color="#b8d0ff" />
       <directionalLight
@@ -67,26 +66,35 @@ const Experience = ({ shadows }: { shadows: boolean }) => {
       <spotLight position={[0, 50, 0]} angle={0.7} penumbra={0.7} intensity={2.5} color="#fff7e0" castShadow shadow-mapSize={[4096, 4096]} />
       <pointLight position={[0, 10, 0]} intensity={0.5} color="#ffeedd" castShadow />
       
-      {/* PERBAIKAN 2: Hanya panggil AtmosphericEffects SATU KALI, di luar Physics */}
       <AtmosphericEffects />
 
       <Physics>
+        {/* RigidBody ini HANYA untuk lingkungan statis */}
         <RigidBody type="fixed" colliders="trimesh">
           <InvasionEnvironment shadows={shadows} scale={1} position={[0, 0, 0]} />
         </RigidBody>
-        <KeyboardControls map={keyboardMap}>
-          <Ecctrl
-            animated capsuleHalfHeight={0.05} scale={1.5}
-            floatHeight={0.49} position={[-5, 30, -20]} jumpVel={3}
-            {...{ characterInitDir: 4.5, camMaxDis: -10, camMinDis: -1, camUpLimit: 1.3, camLowLimit: -0.5, camInitDir: { x: 0.23, y: 1.3 }, }}
-          >
-            <EcctrlAnimation characterURL={characterURL} animationSet={animationSet}>
-              <Character position={[0, -0.51, 0]} />
-            </EcctrlAnimation>
-          </Ecctrl>
-        </KeyboardControls>
 
-        {/* Render hanya kotak pertanyaan yang aktif */}
+        {/* UFO dipanggil di sini agar tidak menjadi tembok statis */}
+        <FlyingUFO />
+
+        {/* Karakter pemain hanya muncul setelah sinematik selesai */}
+        {!isCinematicPlaying && (
+          <KeyboardControls map={keyboardMap}>
+            <Ecctrl
+              animated capsuleHalfHeight={0.05} scale={1.5}
+              floatHeight={0.49} 
+              position={[-25, 2, -18]}
+              jumpVel={3}
+              {...{ characterInitDir: 4.5, camMaxDis: -10, camMinDis: -1, camUpLimit: 1.3, camLowLimit: -0.5, camInitDir: { x: 0.23, y: 1.3 }, }}
+            >
+              <EcctrlAnimation characterURL={characterURL} animationSet={animationSet}>
+                <Character position={[0, -0.43, 0]} />
+              </EcctrlAnimation>
+            </Ecctrl>
+          </KeyboardControls>
+        )}
+
+        {/* Kotak Pertanyaan */}
         {questions
             .filter((q) => q.id === visibleBoxIndex)
             .map((q) => (
@@ -95,7 +103,7 @@ const Experience = ({ shadows }: { shadows: boolean }) => {
         }
       </Physics>
       
-      {/* PERBAIKAN 3: Logika untuk menampilkan modal game over diletakkan di luar Physics */}
+      {/* Modal Akhir Permainan */}
       {visibleBoxIndex >= questions.length && <EndGameModal />}
     </>
   );
